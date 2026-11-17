@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MM Advance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:#1f2937;font-family:system-ui,Segoe UI,Arial,sans-serif;font-size:14px}
+.wrap{max-width:1250px;margin:0 auto;padding:20px}
+h1{margin:0 0 4px;font-size:22px;color:#111}
+.sub{color:#6b7280;margin-bottom:16px}
+textarea{width:100%;height:100px;border:1px solid #d1d5db;border-radius:8px;padding:10px;font:12px monospace;resize:vertical}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;align-items:center}
+button{border:1px solid #d1d5db;background:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px}
+button:hover{background:#f3f4f6}
+button.p{background:#2563eb;color:#fff;border-color:#2563eb}
+button.p:hover{background:#1d4ed8}
+.srcbox{display:flex;align-items:center;gap:8px;margin:12px 0}
+.srcbox label{font-weight:600}
+#src{border:1px solid #d1d5db;border-radius:8px;padding:9px 11px;width:300px;font-size:14px}
+#src.bad{border-color:#dc2626;background:#fef2f2}
+.msg{padding:9px 12px;border-radius:8px;margin:8px 0;display:none}
+.err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-size:12.5px}
+th,td{border:1px solid #d1d5db;padding:6px 8px;text-align:left;white-space:nowrap}
+th{background:#f3f4f6}
+td.n,th.n{text-align:right}
+.tot{display:inline-block;border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:8px 16px;margin:0 0 10px;font-size:16px}
+.tot b{color:#1d4ed8;font-size:18px}
+.gap{height:12px}
+.st{font-weight:600;margin:8px 0 4px}
+#ex{position:fixed;left:-99999px;top:0;background:#fff;padding:16px;color:#111}
+#ex h2{margin:0 0 6px;font-size:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MM Advance</h1>
+  <div class="sub">Sheet data paste pannunga → Payment Source oru thadava type pannunga (ella rows-kum apply aagum) → Copy / Download.</div>
+  <textarea id="paste" placeholder="Paste copied sheet data here (Ctrl+V)"></textarea>
+  <div class="srcbox">
+    <label for="src">Payment Source *</label>
+    <input id="src" placeholder="Enna payment? (ex: TRIP TRUCK ADV)" oninput="this.classList.remove('bad');if(R.length)render()">
+  </div>
+  <div class="bar">
+    <button class="p" onclick="build()">Draw Table</button>
+    <button onclick="clearAll()">Clear</button>
+  </div>
+  <div id="msg" class="msg"></div>
+  <div id="tw" style="display:none"></div>
+  <div class="bar" id="acts" style="display:none">
+    <button class="p" onclick="copyImg()">Copy Image</button>
+    <button onclick="dl('png')">Download Image</button>
+    <button onclick="dl('pdf')">Download PDF</button>
+    <button onclick="dl('xlsx')">Download Excel</button>
+  </div>
+</div>
+<div id="ex"></div>
+<script>
+var H=[],R=[],N=[],iA=-1,iD=2;
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function show(t,c){var m=document.getElementById('msg');m.textContent=t;m.className='msg '+c;m.style.display='block'}
+function hide(){document.getElementById('msg').style.display='none'}
+function isNum(s){return /^[\d,]+(\.\d+)?$/.test(String(s).trim())}
+function num(s){var v=parseFloat(String(s).replace(/,/g,''));return isNaN(v)?0:v}
+function fmt(v){return v.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function getName(d){
+  var s=String(d).trim(),m;
+  if(/^UPI\//i.test(s)){var p=s.split('/');if(p[1]&&p[1].trim())return p[1].trim()}
+  m=s.match(/SENT TO\s+(.*?)\s*\//i);if(m&&m[1].trim())return m[1].trim();
+  return s;
+}
+function build(){
+  hide();
+  var t=document.getElementById('paste').value.replace(/\r/g,'').trim();
+  if(!t){show('Munnadi sheet data paste pannunga.','err');return}
+  var rows=t.split('\n').map(function(l){return l.split('\t')});
+  var w=Math.max.apply(null,rows.map(function(r){return r.length}));
+  H=/date|description|amount/i.test(rows[0].join(' '))?rows.shift():[];
+  while(H.length<w)H.push('Col '+(H.length+1));
+  R=rows.map(function(r){while(r.length<w)r.push('');return r});
+  iA=H.findIndex(function(x){return /amount/i.test(x)});if(iA<0)iA=Math.min(4,w-1);
+  iD=H.findIndex(function(x){return /desc/i.test(x)});if(iD<0)iD=Math.min(2,w-1);
+  N=R.map(function(r){return getName(r[iD])});
+  render();
+}
+function total(){return R.reduce(function(a,r){return a+num(r[iA])},0)}
+function groups(){
+  var g={};
+  R.forEach(function(r,i){var k=N[i].toUpperCase();if(!g[k])g[k]={name:N[i],c:0,t:0};g[k].c++;g[k].t+=num(r[iA])});
+  return Object.keys(g).map(function(k){return g[k]}).sort(function(a,b){return b.t-a.t});
+}
+function reps(){return groups().filter(function(g){return g.c>1})}
+function topHtml(){
+  var h='<div class="tot">Total Amount: <b>₹ '+fmt(total())+'</b> &nbsp;|&nbsp; Rows: '+R.length+'</div>';
+  var rp=reps();
+  h+='<div class="st">Repeated Name Total</div>';
+  if(!rp.length)return h+'<div style="color:#6b7280;margin-bottom:6px">Repeat aana name illa.</div>';
+  h+='<table><thead><tr><th>#</th><th>Name</th><th class="n">Count</th><th class="n">Total Amount</th></tr></thead><tbody>';
+  rp.forEach(function(g,i){h+='<tr><td>'+(i+1)+'</td><td>'+esc(g.name)+'</td><td class="n">'+g.c+'</td><td class="n">'+fmt(g.t)+'</td></tr>'});
+  return h+'</tbody></table>';
+}
+function mainHtml(){
+  var src=esc(document.getElementById('src').value.trim());
+  var h='<table><thead><tr><th>#</th>';
+  H.forEach(function(x,j){h+='<th'+(j===iA?' class="n"':'')+'>'+esc(x)+'</th>';if(j===iD)h+='<th>Name</th>'});
+  h+='<th>Payment Source</th></tr></thead><tbody>';
+  R.forEach(function(r,i){
+    h+='<tr><td>'+(i+1)+'</td>';
+    r.forEach(function(c,j){h+='<td'+(j===iA||(isNum(c)&&j>iD+1)?' class="n"':'')+'>'+esc(c)+'</td>';if(j===iD)h+='<td><b>'+esc(N[i])+'</b></td>'});
+    h+='<td>'+src+'</td></tr>';
+  });
+  return h+'</tbody></table>';
+}
+function render(){
+  var tw=document.getElementById('tw');
+  tw.innerHTML=topHtml()+'<div class="gap"></div><div class="scroll">'+mainHtml()+'</div>';
+  tw.style.display='block';document.getElementById('acts').style.display='flex';
+}
+function check(){
+  var s=document.getElementById('src');
+  if(!R.length){show('Munnadi data paste panni Draw Table click pannunga.','err');return false}
+  if(!s.value.trim()){s.classList.add('bad');s.focus();show('First Payment Source fill pannunga!','err');return false}
+  hide();return true;
+}
+function exNode(){
+  var e=document.getElementById('ex');
+  e.innerHTML='<h2>MM Advance - '+new Date().toLocaleDateString('en-GB')+'</h2><div style="margin-bottom:8px">Payment Source: <b>'+esc(document.getElementById('src').value.trim())+'</b></div>'+topHtml()+'<div class="gap"></div>'+mainHtml();
+  return e;
+}
+function canvas(){return html2canvas(exNode(),{backgroundColor:'#ffffff',scale:2})}
+function copyImg(){
+  if(!check())return;
+  canvas().then(function(c){
+    c.toBlob(function(b){
+      try{navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(function(){show('Image copied! Ippo paste pannalaam.','ok')},function(){show('Copy block aachu. Download Image use pannunga.','err')})}
+      catch(e){show('Indha browser la image copy support illa. Download Image use pannunga.','err')}
+    },'image/png');
+  });
+}
+function dl(type){
+  if(!check())return;
+  var name='MM_Advance_'+new Date().toISOString().slice(0,10),src=document.getElementById('src').value.trim();
+  if(type==='xlsx'){
+    var hd=[];H.forEach(function(x,j){hd.push(x);if(j===iD)hd.push('Name')});hd.push('Payment Source');
+    var data=[hd].concat(R.map(function(r,i){var o=[];r.forEach(function(c,j){o.push(j===iA?num(c):c);if(j===iD)o.push(N[i])});o.push(src);return o}));
+    data.push([]);var tr=new Array(hd.length).fill('');tr[0]='TOTAL';tr[iA+(iA>iD?1:0)]=total();data.push(tr);
+    var rp=reps(),s2=[['Name','Count','Total Amount']].concat(rp.map(function(g){return [g.name,g.c,g.t]}));
+    var wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'MM Advance');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s2),'Repeated Name Total');
+    XLSX.writeFile(wb,name+'.xlsx');return;
+  }
+  canvas().then(function(c){
+    if(type==='png'){var a=document.createElement('a');a.href=c.toDataURL('image/png');a.download=name+'.png';a.click()}
+    else{var J=window.jspdf.jsPDF,w=c.width,h=c.height;var p=new J({orientation:w>h?'l':'p',unit:'px',format:[w/2,h/2]});p.addImage(c.toDataURL('image/png'),'PNG',0,0,w/2,h/2);p.save(name+'.pdf')}
+  });
+}
+function clearAll(){
+  document.getElementById('paste').value='';document.getElementById('src').value='';
+  H=[];R=[];N=[];document.getElementById('tw').style.display='none';document.getElementById('acts').style.display='none';hide();
+}
+</script>
+</body>
+</html>
