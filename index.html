@@ -1,270 +1,263 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Trip Advance vs Bank Reconciliation</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MM Advance</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box}
-body{margin:0;padding:20px;background:#fff;color:#1f2937;font:14px/1.4 system-ui,"Segoe UI",Arial,sans-serif}
-h1{font-size:20px;margin:0 0 14px}
-.card{border:1px solid #e3e6ea;border-radius:10px;padding:14px;margin-bottom:14px;background:#fff}
-.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
-label{display:flex;flex-direction:column;font-size:12px;color:#6b7280;gap:4px}
-input,select,button{font:inherit;padding:7px 10px;border:1px solid #d1d5db;border-radius:7px;background:#fff;color:#1f2937}
-button{cursor:pointer;font-weight:600}button:hover{background:#f3f4f6}
-button.p{background:#2563eb;border-color:#2563eb;color:#fff}button.p:hover{background:#1d4ed8}
-.bk{border:1px dashed #d1d5db;border-radius:8px;padding:10px;margin-top:10px}
-.bk small{color:#6b7280;display:block;margin-top:4px}
-.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
-.sum div{border:1px solid #e3e6ea;border-radius:10px;padding:10px}.sum b{display:block;font-size:18px}.sum span{font-size:12px;color:#6b7280}
-.wrap{overflow:auto;max-height:70vh;border:1px solid #e3e6ea;border-radius:10px}
-table{border-collapse:collapse;width:100%;min-width:1000px}
-th,td{border:1px solid #e3e6ea;padding:6px 9px;text-align:left;white-space:nowrap}
-th{position:sticky;top:0;background:#f3f4f6;z-index:1}
+body{margin:0;background:#fff;color:#1f2937;font-family:system-ui,Segoe UI,Arial,sans-serif;font-size:14px}
+.wrap{max-width:1250px;margin:0 auto;padding:20px}
+h1{margin:0 0 4px;font-size:22px;color:#111}
+.sub{color:#6b7280;margin-bottom:16px}
+textarea{width:100%;height:100px;border:1px solid #d1d5db;border-radius:8px;padding:10px;font:12px monospace;resize:vertical}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;align-items:center}
+button{border:1px solid #d1d5db;background:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px}
+button:hover{background:#f3f4f6}
+button.p{background:#2563eb;color:#fff;border-color:#2563eb}
+button.p:hover{background:#1d4ed8}
+.srcbox{display:flex;align-items:center;gap:8px;margin:12px 0}
+.srcbox label{font-weight:600}
+#src{border:1px solid #d1d5db;border-radius:8px;padding:9px 11px;width:300px;font-size:14px}
+#src.bad{border-color:#dc2626;background:#fef2f2}
+.msg{padding:9px 12px;border-radius:8px;margin:8px 0;display:none}
+.err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-size:12.5px}
+th,td{border:1px solid #d1d5db;padding:6px 8px;text-align:left;white-space:nowrap}
+th{background:#f3f4f6}
 td.n,th.n{text-align:right}
-tr.bad td{background:#fdecec}
-select.sts{font-weight:700;padding:3px 6px}
-tr.bad .st select{color:#dc2626}.ok select{color:#16a34a}
-tr.chk td{background:#ecfdf3}
-input[type=checkbox]{width:16px;height:16px;padding:0;cursor:pointer}
-td.red{color:#dc2626;font-weight:700}
-.st{font-weight:700}.ok{color:#16a34a}.bad .st{color:#dc2626}
-tfoot td{font-weight:700;background:#f9fafb}
-</style></head><body>
-<h1>Trip Advance vs Bank – Reconciliation</h1>
-
-<div class="card">
- <div class="row">
-  <label>1) Trip Advance Report (.xlsx)<input type="file" id="tf" accept=".xlsx,.xls,.csv"></label>
-  <label>2) Bank statements (Kotak, Axis... multiple allowed)<input type="file" id="bf" accept=".xlsx,.xls,.csv" multiple></label>
-  <label>Trip type<select id="tt"><option value="">All types</option><option value="ADV">Advance only (GC + Extra)</option></select></label>
-  <button class="p" id="go">Check / Reconcile</button>
- </div>
- <div id="maps"></div>
+.tot{display:inline-block;border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:8px 16px;margin:0 0 10px;font-size:16px}
+.tot b{color:#1d4ed8;font-size:18px}
+.gap{height:12px}
+.st{font-weight:600;margin:8px 0 4px}
+#ex{position:fixed;left:-99999px;top:0;background:#fff;padding:16px;color:#111}
+#ex h2{margin:0 0 6px;font-size:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MM Advance</h1>
+  <div class="sub">Sheet data paste pannunga (header irundhaalum illaatiyum OK) → Payment Source oru thadava type pannunga (ella rows-kum apply aagum) → Copy / Download.</div>
+  <textarea id="paste" placeholder="Paste copied sheet data here (Ctrl+V)"></textarea>
+  <div class="srcbox">
+    <label for="src">Payment Source *</label>
+    <input id="src" placeholder="Enna payment? (ex: TRIP TRUCK ADV)" oninput="this.classList.remove('bad');if(R.length)render()">
+  </div>
+  <div class="bar">
+    <button class="p" onclick="build()">Draw Table</button>
+    <button onclick="clearAll()">Clear</button>
+  </div>
+  <div id="msg" class="msg"></div>
+  <div id="tw" style="display:none"></div>
+  <div class="bar" id="acts" style="display:none">
+    <button class="p" onclick="copyImg()">Copy Image</button>
+    <button onclick="dl('png')">Download Image</button>
+    <button onclick="dl('pdf')">Download PDF</button>
+    <button onclick="dl('xlsx')">Download Excel</button>
+  </div>
 </div>
-
-<div class="card row" id="flt" style="display:none">
- <label>From date<input type="date" id="d1"></label>
- <label>To date<input type="date" id="d2"></label>
- <label>Payment source<select id="fs"></select></label>
- <label>Status<select id="fst"><option value="">All</option><option>Match</option><option>Mismatch</option><option>Only in Trip</option><option>Only in Bank</option><option>Pending</option><option>Checked</option></select></label>
- <label>Manual check<select id="fck"><option value="">All</option><option value="1">Ticked only</option><option value="0">Not ticked</option></select></label>
- <label style="min-width:260px">🔍 Search (anything)<input id="q" placeholder="vehicle, name, amount, type, status, source..."></label>
- <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="nt"> Show non-trip bank rows</label>
- <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="to"> Show trip-only rows (not in bank)</label>
- <button id="cl">Clear ticks</button><button id="xl">⬇ Excel</button><button id="pf">⬇ PDF</button><button id="im">⬇ Image</button><button id="cp">📋 Copy Image</button>
-</div>
-
-<div id="out"></div>
-
+<div id="ex"></div>
 <script>
-/*CORE*/
-const norm=s=>String(s==null?'':s).toUpperCase().replace(/[^A-Z0-9]/g,'');
-const VEH=/^[A-Z]{2}\d{1,2}[A-Z]{0,3}\d{3,4}$/;
-const iso=d=>d.toISOString().slice(0,10);
-function pd(v){
- if(v instanceof Date)return iso(v);
- if(typeof v==='number'&&v>20000&&v<80000)return iso(new Date(Math.round((v-25569)*864e5)));
- const m=String(v==null?'':v).match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
- if(!m)return'';let y=+m[3];if(y<100)y+=2000;
- return y+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
-}
-const fd=s=>s?s.split('-').reverse().join('-'):'';
-function lev(a,b){const m=a.length,n=b.length;let p=[...Array(n+1).keys()];for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
-const toks=s=>String(s||'').replace(/^SentIMPS\d+/i,'').toUpperCase().replace(/[^A-Z ]/g,' ').split(/\s+/).filter(t=>t.length>=3&&!['IMPS','SENT','TRIP','TRUCK'].includes(t));
-function nameSim(a,b){
- const ta=toks(a),tb=toks(b);if(!ta.length||!tb.length)return 0;let h=0;
- for(const x of ta)if(tb.some(y=>(x.length>=4&&y.length>=4&&(x.startsWith(y)||y.startsWith(x)))||1-lev(x,y)/Math.max(x.length,y.length)>=.78))h++;
- return h/Math.min(ta.length,tb.length);
-}
-const r2=n=>Math.round(n*100)/100;
-function reconcile(trip,banks){
- const G=new Map(),srcs=new Set(banks.map(b=>b.src)),idx={};let n=0;
- const grp=(src,date,vk,veh)=>{const k=src+'|'+date+'|'+vk;if(!G.has(k))G.set(k,{key:k,src,date,veh,drv:'',types:new Set(),tveh:'',bveh:new Set(),basis:new Set(),trip:0,bank:0,names:[],rel:true});return G.get(k)};
- for(const t of trip.filter(t=>srcs.has(t.src))){
-  const k=t.src+'|'+t.date,vk=norm(t.veh);idx[k]=idx[k]||new Map();
-  if(!idx[k].has(vk))idx[k].set(vk,{veh:t.veh,drv:t.drv});
-  const g=grp(t.src,t.date,vk,t.veh);g.trip+=t.amt;g.tveh=g.tveh||t.veh;g.drv=g.drv||t.drv;g.types.add(t.type);
- }
- for(const b of banks)for(const r of b.rows){
-  const m=idx[b.src+'|'+r.date]||new Map();let vk=r.veh?norm(r.veh):'',veh=r.veh||'',bs=r.veh?'Vehicle in bank file':'';
-  if(vk&&!m.has(vk))for(const k of m.keys())if(lev(k,vk)<=1){vk=k;bs='Vehicle (spelling fixed)';break}
-  if(!vk){const d=String(r.name).match(/\/(\d{3,4})(?:\D|$)/);if(d)for(const k of m.keys())if(k.endsWith(d[1])){vk=k;bs='Narration last digits';break}}
-  if(!vk){let best=0,bk;for(const [k,v] of m){const s=nameSim(r.name,v.drv);if(s>best){best=s;bk=k}}if(best>=.5){vk=bk;bs='Driver name'}}
-  if(vk&&m.has(vk))veh=m.get(vk).veh;
-  const g=vk?grp(b.src,r.date,vk,veh):grp(b.src,r.date,'#'+(n++),'');
-  if(!vk)g.rel=false;else{g.bveh.add(r.veh?r.veh:veh+' (assigned)');g.basis.add(bs)}
-  g.bank+=r.amt;g.names.push(String(r.name).replace(/^SentIMPS\d+/i,'').trim());
- }
- return [...G.values()].map(g=>{
-  g.trip=r2(g.trip);g.bank=r2(g.bank);g.diff=r2(g.trip-g.bank);g.types=[...g.types].join(', ');g.bankName=g.names.join(' | ');g.bankVeh=[...g.bveh].join(', ')||'-';g.basisTxt=[...g.basis].join(', ')||(g.bank?'Not assigned':'-');
-  g.status=g.trip&&g.bank?(g.diff===0?'Match':'Mismatch'):g.trip?'Only in Trip':'Only in Bank';
-  return g}).sort((a,b)=>b.date.localeCompare(a.date)||a.veh.localeCompare(b.veh));
-}
-function parseTrip(ws){
- const rows=XLSX.utils.sheet_to_json(ws,{defval:''}),o=[];
- const f=(r,re)=>{const k=Object.keys(r).find(k=>re.test(k.replace(/\u00a0/g,' ').toLowerCase()));return k?r[k]:''};
- for(const r of rows){const amt=parseFloat(String(f(r,/total amount|^amount/)).replace(/,/g,''));const date=pd(f(r,/payment date|^date/));
-  if(!date||!(amt>0))continue;
-  o.push({veh:String(f(r,/vehicle/)).replace(/\u00a0/g,' ').trim(),drv:String(f(r,/driver/)).trim(),date,src:String(f(r,/payment source|source/)).trim(),type:String(f(r,/^type/)).trim(),amt})}
- return o;
-}
-function parseBank(wb,sheetName){
- const rd=n=>XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:''});
- const rows=rd(sheetName),h=rows[0].map(x=>String(x).toLowerCase()),body=rows.slice(1).filter(r=>r.some(c=>c!==''));
- const smp=j=>body.slice(0,60).map(r=>r[j]);
- const col=(re,t)=>{let i=h.findIndex(x=>re.test(x));if(i<0&&t)i=h.findIndex((_,j)=>t(smp(j)));return i};
- const num=v=>v.filter(x=>parseFloat(String(x).replace(/,/g,''))>0).length>v.length*.6;
- const ci={date:col(/date|col 2/,v=>v.filter(x=>pd(x)).length>v.length*.6),
-  amt:col(/debit|withdraw|amt|amount|col 5/,num),
-  veh:col(/vehicle|col 9/,v=>v.filter(x=>VEH.test(norm(x))).length>2)};
- ci.name=col(/name|narration|particular|desc/);
- if(ci.name<0)ci.name=h.findIndex((_,j)=>j!==ci.date&&j!==ci.amt&&j!==ci.veh);
- const vmap={};
- for(const n of wb.SheetNames)if(n!==sheetName){const R=rd(n),H=R[0].map(x=>String(x).toLowerCase());
-  const di=H.findIndex(x=>/date|col 2/.test(x)),ai=H.findIndex(x=>/debit|amt|amount|col 5/.test(x)),ni=H.findIndex(x=>/name/.test(x)),vi=H.findIndex(x=>/vehicle|col 9/.test(x));
-  if(di>=0&&ai>=0&&ni>=0&&vi>=0)for(const r of R.slice(1))if(r[vi])vmap[pd(r[di])+'|'+r2(parseFloat(String(r[ai]).replace(/,/g,'')))+'|'+norm(r[ni])]=r[vi]}
- const o=[];
- for(const r of body){const amt=parseFloat(String(r[ci.amt]).replace(/,/g,''));const date=pd(r[ci.date]);if(!date||!(amt>0))continue;
-  const name=String(r[ci.name]||'');let veh=ci.veh>=0?String(r[ci.veh]||'').trim():'';
-  if(!veh)veh=vmap[date+'|'+r2(amt)+'|'+norm(name)]||'';
-  o.push({date,name,amt,veh})}
- return {rows:o,info:`Date: ${h[ci.date]} | Name: ${h[ci.name]} | Amount: ${h[ci.amt]} | Vehicle: ${ci.veh>=0?h[ci.veh]:'-'}`,sample:String(rows[1]&&rows[1][h.findIndex(x=>/source/.test(x))]||'')};
-}
-/*ENDCORE*/
+var H=[],R=[],N=[],NC=[],iA=-1,iD=2;
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function show(t,c){var m=document.getElementById('msg');m.textContent=t;m.className='msg '+c;m.style.display='block'}
+function hide(){document.getElementById('msg').style.display='none'}
+function isNum(s){return /^[\d,]+(\.\d+)?$/.test(String(s).trim())}
+function isDate(s){return /^\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}$/.test(String(s).trim())}
+function num(s){var v=parseFloat(String(s).replace(/,/g,''));return isNaN(v)?0:v}
+function fmt(v){return v.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
 
-/* ---------- UI ---------- */
-const $=id=>document.getElementById(id);
-let TRIP=[],BANKS=[],RES=[];
-const CH=new Set();try{JSON.parse(localStorage.getItem('tallyChecks')||'[]').forEach(k=>CH.add(k))}catch(e){}
-const ST={};try{Object.assign(ST,JSON.parse(localStorage.getItem('tallyStatus')||'{}'))}catch(e){}
-const saveST=()=>{try{localStorage.setItem('tallyStatus',JSON.stringify(ST))}catch(e){}};
-const SOPT=['Match','Mismatch','Only in Trip','Only in Bank','Pending','Checked'];
-const eff=r=>ST[r.key]||r.status,isBad=r=>!['Match','Checked'].includes(eff(r));
-const opts=cur=>SOPT.map(o=>`<option ${o===cur?'selected':''}>${o}</option>`).join('');
-const saveCH=()=>{try{localStorage.setItem('tallyChecks',JSON.stringify([...CH]))}catch(e){}};
-const read=f=>new Promise(r=>{const x=new FileReader();x.onload=()=>r(XLSX.read(x.result,{type:'array'}));x.readAsArrayBuffer(f)});
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fm=n=>Number(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
-function guess(srcs,text){
- const t=text.toLowerCase(),d=(t.match(/\d{4}/g)||[]);let best='',bs=0;
- for(const s of srcs){const sl=s.toLowerCase();let sc=0;
-  if(d.some(x=>sl.endsWith(x)||sl.includes(x)))sc+=2;
-  const w=sl.split(/[^a-z]+/)[0];if(w&&t.includes(w))sc+=1;
-  if(/\bod\b/.test(sl)!==/\bod\b/.test(t))sc-=.5;
-  if(sc>bs){bs=sc;best=s}}
- return best;
+/* Name extraction: INB/NEFT, INB/RTGS, INB/IFT, IMPS/P2A, UPI */
+function getName(d){
+  var s=String(d).trim(),p=s.split('/').map(function(x){return x.trim()}),u=(p[0]||'').toUpperCase(),n='',m;
+  if(u==='UPI'){n=p[1]||''}
+  else if(u==='INB'){
+    var t=(p[1]||'').toUpperCase();
+    if(t==='IFT')n=p[2]||'';
+    else n=p[3]||'';
+  }
+  else if(u==='IMPS'){n=p[3]||''}
+  if(!n){
+    m=s.match(/SENT TO\s+(.*?)\s*\//i);if(m&&m[1].trim())n=m[1].trim();
+  }
+  n=n.replace(/\s+/g,' ').trim();
+  return n||s;
 }
-$('tf').onchange=async e=>{TRIP=parseTrip((wb=>wb.Sheets[wb.SheetNames[0]])(await read(e.target.files[0])));fillTypes();showMaps()};
-$('bf').onchange=async e=>{BANKS=[];for(const f of e.target.files){const wb=await read(f);BANKS.push({name:f.name,wb,sheet:wb.SheetNames[0]})}showMaps()};
-function fillTypes(){$('tt').innerHTML='<option value="">All types</option><option value="ADV">Advance only (GC + Extra)</option>'+[...new Set(TRIP.map(t=>t.type))].filter(Boolean).map(t=>`<option>${esc(t)}</option>`).join('')}
-function showMaps(){
- const srcs=[...new Set(TRIP.map(t=>t.src))].filter(Boolean);
- $('maps').innerHTML=(TRIP.length?`<small>Trip rows loaded: <b>${TRIP.length}</b></small>`:'')+BANKS.map((b,i)=>{
-  const p=parseBank(b.wb,b.sheet);b.p=p;if(b.src===undefined)b.src=guess(srcs,b.name+' '+p.sample);
-  return `<div class="bk"><div class="row"><b>${esc(b.name)}</b>
-  <label>Sheet<select onchange="BANKS[${i}].sheet=this.value;showMaps()">${b.wb.SheetNames.map(s=>`<option ${s===b.sheet?'selected':''}>${esc(s)}</option>`).join('')}</select></label>
-  <label>Matches Trip payment source<select onchange="BANKS[${i}].src=this.value">${srcs.map(s=>`<option ${s===b.src?'selected':''}>${esc(s)}</option>`).join('')}</select></label></div>
-  <small>${p.rows.length} bank rows • ${esc(p.info)}</small></div>`}).join('');
+
+/* Any paste style: tab / multiple spaces / quoted cells */
+function cleanCell(c){
+  c=String(c).trim();
+  if(c.length>1&&c.charAt(0)==='"'&&c.charAt(c.length-1)==='"')c=c.slice(1,-1).trim();
+  return c;
 }
-$('go').onclick=()=>{
- if(!TRIP.length||!BANKS.length)return alert('Trip report and at least one bank file upload pannunga');
- const tt=$('tt').value,TR=TRIP.filter(t=>!tt||(tt==='ADV'?/advance/i.test(t.type):t.type===tt));
- RES=reconcile(TR,BANKS.map(b=>({src:b.src,rows:parseBank(b.wb,b.sheet).rows})));
- const ds=RES.map(r=>r.date).sort();$('d1').value=ds[0];$('d2').value=ds[ds.length-1];
- $('fs').innerHTML='<option value="">All</option>'+[...new Set(RES.map(r=>r.src))].map(s=>`<option>${esc(s)}</option>`).join('');
- $('flt').style.display='flex';render();
-};
-['d1','d2','fs','fst','fck','q','nt','to'].forEach(i=>$(i).oninput=render);
-function hit(r,qs){
- if(!qs.length)return true;
- const h=[...cells(r),fm(r.trip),fm(r.bank),fm(r.diff),r.date].join(' ').toLowerCase(),n=norm(h);
- return qs.every(t=>h.includes(t)||n.includes(norm(t)));
+function splitLine(l){
+  var a;
+  if(l.indexOf('\t')>-1)a=l.split('\t');
+  else if(/\s{2,}/.test(l.trim()))a=l.trim().split(/\s{2,}/);
+  else a=[l];
+  return a.map(cleanCell);
 }
-function view(){
- const a=$('d1').value,b=$('d2').value,s=$('fs').value,st=$('fst').value,qs=$('q').value.toLowerCase().split(/\s+/).filter(Boolean),nt=$('nt').checked,ck=$('fck').value,to=$('to').checked;
- return RES.filter(r=>(!a||r.date>=a)&&(!b||r.date<=b)&&(!s||r.src===s)&&(!st||eff(r)===st)&&(nt||r.rel)&&(to||r.status!=='Only in Trip')&&(!ck||(ck==='1')===CH.has(r.key))&&hit(r,qs));
+
+function build(){
+  hide();
+  var t=document.getElementById('paste').value.replace(/\r/g,'');
+  var lines=t.split('\n').filter(function(l){return l.trim()!==''});
+  if(!lines.length){show('Munnadi sheet data paste pannunga.','err');return}
+  var rows=lines.map(splitLine);
+  var hasH=!isDate(rows[0][0])&&/date|description|amount|narration|particular|debit/i.test(rows[0].join(' '));
+  var rawH=hasH?rows.shift():[];
+  if(!rows.length){show('Header mattum irukku, data illa.','err');return}
+  var w=Math.max(rawH.length,Math.max.apply(null,rows.map(function(r){return r.length})));
+  rows=rows.map(function(r){while(r.length<w)r.push('');return r});
+  while(rawH.length<w)rawH.push('');
+
+  var n=rows.length;
+  function frac(j,f){return rows.filter(function(r){return f(r[j])}).length/n}
+  function numCol(j){return frac(j,function(x){return x!==''&&isNum(x)})>0.6}
+  function dateCol(j){return frac(j,isDate)>0.6}
+
+  /* Amount column */
+  var a=-1,d=-1,j;
+  if(hasH){
+    a=rawH.findIndex(function(x){return /amount|debit|withdraw/i.test(x)});
+    d=rawH.findIndex(function(x){return /desc|narration|particular/i.test(x)});
+  }
+  if(a<0){for(j=0;j<w;j++){if(numCol(j)){a=j;break}}}
+  if(a<0)a=Math.min(4,w-1);
+  /* Description column */
+  if(d<0){
+    for(j=0;j<a;j++){
+      if(dateCol(j)||numCol(j))continue;
+      var avg=rows.reduce(function(s,r){return s+r[j].length},0)/n;
+      if(avg>8){d=j;break}
+    }
+  }
+  if(d<0)d=Math.max(0,a-1);
+
+  /* Drop empty columns & exact duplicate columns */
+  var keep=[];
+  for(j=0;j<w;j++){
+    if(j!==a&&j!==d){
+      var empty=rows.every(function(r){return r[j]===''});
+      if(empty)continue;
+      var dup=keep.some(function(k){return rows.every(function(r){return r[k]===r[j]})});
+      if(dup)continue;
+    }
+    keep.push(j);
+  }
+
+  /* Column names */
+  var texts=['Purpose','Vehicle No','Account'],ti=0,names=[];
+  keep.forEach(function(j){
+    var nm;
+    if(hasH&&rawH[j])nm=rawH[j];
+    else if(j===a)nm='Amount';
+    else if(j===d)nm='Description';
+    else if(j<d)nm='Date';
+    else if(numCol(j))nm=(j===a+1)?'Credit':(j===a+2?'Balance':'Col '+(j+1));
+    else{nm=texts[ti]||('Col '+(j+1));ti++}
+    names.push(nm);
+  });
+
+  H=names;
+  R=rows.map(function(r){return keep.map(function(k){return r[k]})});
+  iA=keep.indexOf(a);iD=keep.indexOf(d);
+  NC=H.map(function(x,c){
+    return R.some(function(r){return r[c]!==''})&&R.every(function(r){return r[c]===''||isNum(r[c])});
+  });
+  N=R.map(function(r){return getName(r[iD])});
+  render();
 }
-const HEAD=['Date','Tally ✔','Trip Vehicle No','Driver (Trip)','Type','Payment Source','Asset Amount','Bank Vehicle No','Bank Name','Bank Amount','Difference','Matched By','Status'];
-const NUM=[6,9,10];
-const cells=r=>[fd(r.date),CH.has(r.key)?'✔':'',r.tveh||'-',r.drv,r.types,r.src,r.trip,r.bankVeh,r.bankName,r.bank,r.diff,r.basisTxt,eff(r)];
+function total(){return R.reduce(function(a,r){return a+num(r[iA])},0)}
+function groups(){
+  var g={};
+  R.forEach(function(r,i){
+    var k=N[i].toUpperCase().replace(/\s+/g,' ');
+    if(!g[k])g[k]={name:N[i],c:0,t:0};
+    g[k].c++;g[k].t+=num(r[iA]);
+  });
+  return Object.keys(g).map(function(k){return g[k]}).sort(function(a,b){return b.t-a.t});
+}
+function reps(){return groups().filter(function(g){return g.c>1})}
+function topHtml(){
+  var h='<div class="tot">Total Amount: <b>₹ '+fmt(total())+'</b> &nbsp;|&nbsp; Rows: '+R.length+'</div>';
+  var rp=reps();
+  h+='<div class="st">Repeated Name Total</div>';
+  if(!rp.length)return h+'<div style="color:#6b7280;margin-bottom:6px">Repeat aana name illa.</div>';
+  h+='<table><thead><tr><th>#</th><th>Name</th><th class="n">Count</th><th class="n">Total Amount</th></tr></thead><tbody>';
+  rp.forEach(function(g,i){h+='<tr><td>'+(i+1)+'</td><td>'+esc(g.name)+'</td><td class="n">'+g.c+'</td><td class="n">'+fmt(g.t)+'</td></tr>'});
+  return h+'</tbody></table>';
+}
+function mainHtml(){
+  var src=esc(document.getElementById('src').value.trim());
+  var h='<table><thead><tr><th>#</th>';
+  H.forEach(function(x,j){h+='<th'+(NC[j]?' class="n"':'')+'>'+esc(x)+'</th>';if(j===iD)h+='<th>Name</th>'});
+  h+='<th>Payment Source</th></tr></thead><tbody>';
+  R.forEach(function(r,i){
+    h+='<tr><td>'+(i+1)+'</td>';
+    r.forEach(function(c,j){h+='<td'+(NC[j]?' class="n"':'')+'>'+esc(c)+'</td>';if(j===iD)h+='<td><b>'+esc(N[i])+'</b></td>'});
+    h+='<td>'+src+'</td></tr>';
+  });
+  return h+'</tbody></table>';
+}
 function render(){
- const v=view(),T=r2(v.reduce((a,r)=>a+r.trip,0)),B=r2(v.reduce((a,r)=>a+r.bank,0)),c=s=>v.filter(r=>eff(r)===s).length;
- const sc=($('tw')||{}).scrollTop||0,ck=v.filter(r=>CH.has(r.key)),CT=r2(ck.reduce((a,r)=>a+r.trip,0)),CB=r2(ck.reduce((a,r)=>a+r.bank,0)),all=v.length&&ck.length===v.length;
- const rt=r=>r.trip>r.bank,
-  body=v.map(r=>{const bad=isBad(r);
-   const on=CH.has(r.key);return `<tr class="${bad?'bad':on?'chk':''}"><td>${fd(r.date)}</td><td style="text-align:center"><input type="checkbox" class="ck" data-k="${esc(r.key)}" ${on?'checked':''}></td><td>${esc(r.tveh||'-')}</td><td>${esc(r.drv)}</td><td>${esc(r.types)}</td><td>${esc(r.src)}</td>
-   <td class="n ${bad&&rt(r)?'red':''}">${r.trip?fm(r.trip):'-'}</td><td>${esc(r.bankVeh)}</td><td>${esc(r.bankName)}</td>
-   <td class="n ${bad&&!rt(r)?'red':''}">${r.bank?fm(r.bank):'-'}</td><td class="n ${bad?'red':''}">${fm(r.diff)}</td>
-   <td>${esc(r.basisTxt)}</td><td class="st ${bad?'':'ok'}"><select class="sts" data-k="${esc(r.key)}">${opts(eff(r))}</select>${ST[r.key]?' ✎':''}</td></tr>`}).join('');
- $('out').innerHTML=`<div class="sum"><div><span>Asset total</span><b>₹${fm(T)}</b></div><div><span>Bank total</span><b>₹${fm(B)}</b></div>
- <div><span>Difference</span><b style="color:${T===B?'#16a34a':'#dc2626'}">₹${fm(r2(T-B))}</b></div><div><span>Matched</span><b>${c('Match')}</b></div>
- <div><span>Mismatch</span><b style="color:#dc2626">${c('Mismatch')}</b></div><div><span>Only in Trip</span><b style="color:#dc2626">${c('Only in Trip')}</b></div>
- <div><span>Only in Bank</span><b style="color:#dc2626">${c('Only in Bank')}</b></div></div>
- <div class="sum"><div><span>Ticked rows</span><b>${ck.length} / ${v.length}</b></div><div><span>Ticked – Asset total</span><b>₹${fm(CT)}</b></div><div><span>Ticked – Bank total</span><b>₹${fm(CB)}</b></div>
- <div><span>Ticked – Difference</span><b style="color:${CT===CB?'#16a34a':'#dc2626'}">₹${fm(r2(CT-CB))}</b></div><div><span>Not ticked</span><b>${v.length-ck.length}</b></div></div>
- <div class="wrap" id="tw"><table id="tb"><thead><tr>${HEAD.map((h,i)=>i===12?`<th>Status<br><select id="sa"><option value="">Set all rows…</option>${SOPT.map(o=>`<option>${o}</option>`).join('')}<option value="__auto">↺ Reset to auto</option></select></th>`:i===1?`<th style="text-align:center">✔<br><input type="checkbox" id="ca" ${all?'checked':''} title="Tick all shown rows"></th>`:`<th class="${NUM.includes(i)?'n':''}">${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody>
- <tfoot><tr><td colspan="6">Total (${v.length} rows)</td><td class="n">${fm(T)}</td><td></td><td></td><td class="n">${fm(B)}</td><td class="n">${fm(r2(T-B))}</td><td></td><td></td></tr></tfoot></table></div>`;
- $('tw').scrollTop=sc;
- $('ca').onchange=e=>{v.forEach(r=>e.target.checked?CH.add(r.key):CH.delete(r.key));saveCH();render()};
- $('sa').onchange=e=>{const x=e.target.value;if(!x)return;if(!confirm(`${v.length} rows-ukkum status "${x==='__auto'?'Auto':x}" aaga maathattuma?`)){render();return}v.forEach(r=>{x==='__auto'?delete ST[r.key]:ST[r.key]=x});saveST();render()};
- document.querySelectorAll('.sts').forEach(b=>b.onchange=()=>{const r=RES.find(r=>r.key===b.dataset.k);b.value===r.status?delete ST[r.key]:ST[r.key]=b.value;saveST();render()});
- document.querySelectorAll('.ck').forEach(b=>b.onchange=()=>{b.checked?CH.add(b.dataset.k):CH.delete(b.dataset.k);saveCH();render()});
+  var tw=document.getElementById('tw');
+  tw.innerHTML=topHtml()+'<div class="gap"></div><div class="scroll">'+mainHtml()+'</div>';
+  tw.style.display='block';document.getElementById('acts').style.display='flex';
 }
-$('cl').onclick=()=>{if(confirm('Ella ticks-um clear pannattuma?')){CH.clear();saveCH();render()}};
-function save(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
-const stamp=()=>`Reconcile_${$('d1').value}_to_${$('d2').value}`;
-$('xl').onclick=async()=>{
- const v=view(),wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('Reconciliation');
- ws.addRow(HEAD);ws.getRow(1).eachCell(c=>{c.font={bold:true};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F4F6'}}});
- const red={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFC7CE'}};
- v.forEach(r=>{const row=ws.addRow(cells(r)),bad=isBad(r);
-  if(bad)row.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFDECEC'}}});
-  if(!bad&&CH.has(r.key))row.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFECFDF3'}}});
-  if(bad){const ex=row.getCell(r.trip>r.bank?7:10);ex.fill=red;ex.font={bold:true,color:{argb:'FF9C0006'}};row.getCell(11).font={bold:true,color:{argb:'FF9C0006'}};row.getCell(13).font={bold:true,color:{argb:'FF9C0006'}}}});
- const n=v.length+1,t=ws.addRow(['Total','','','','','',{formula:`SUM(G2:G${n})`},'','',{formula:`SUM(J2:J${n})`},{formula:`SUM(K2:K${n})`},'','']);t.font={bold:true};
- ws.columns=[12,10,16,24,22,24,14,26,40,14,12,24,14].map(width=>({width}));
- ws.eachRow(r=>r.eachCell(c=>{c.border={top:{style:'thin',color:{argb:'FFD1D5DB'}},left:{style:'thin',color:{argb:'FFD1D5DB'}},bottom:{style:'thin',color:{argb:'FFD1D5DB'}},right:{style:'thin',color:{argb:'FFD1D5DB'}}}}));
- [7,10,11].forEach(i=>ws.getColumn(i).numFmt='#,##0.00');
- ws.views=[{state:'frozen',ySplit:1}];ws.autoFilter={from:'A1',to:'M1'};
- save(new Blob([await wb.xlsx.writeBuffer()]),stamp()+'.xlsx');
-};
-$('pf').onclick=()=>{
- const v=view(),doc=new jspdf.jsPDF({orientation:'l',unit:'pt',format:'a3'});
- doc.setFontSize(13);doc.text(`Trip Advance vs Bank  (${fd($('d1').value)} to ${fd($('d2').value)})`,28,28);
- doc.autoTable({startY:40,head:[HEAD],body:v.map(r=>cells(r).map((c,i)=>NUM.includes(i)?fm(c):c)),theme:'grid',
-  styles:{fontSize:7,cellPadding:3,textColor:30,lineColor:[209,213,219]},headStyles:{fillColor:[243,244,246],textColor:20},
-  columnStyles:{1:{halign:'center'},6:{halign:'right'},9:{halign:'right'},10:{halign:'right'}},
-  didParseCell:d=>{if(d.section!=='body')return;const r=v[d.row.index];if(!isBad(r)){if(CH.has(r.key))d.cell.styles.fillColor=[236,253,243];return}d.cell.styles.fillColor=[253,236,236];
-   if(d.column.index===(r.trip>r.bank?6:9)||d.column.index===10||d.column.index===12){d.cell.styles.textColor=[220,38,38];d.cell.styles.fontStyle='bold'}}});
- doc.save(stamp()+'.pdf');
-};
-async function makeCanvas(){
- const w=document.createElement('div');
- w.style.cssText='position:fixed;left:-99999px;top:0;background:#fff;padding:16px;width:max-content;font-family:Arial,sans-serif';
- w.innerHTML=`<h3 style="margin:0 0 10px">Trip Advance vs Bank (${fd($('d1').value)} to ${fd($('d2').value)})</h3>`+$('tw').innerHTML;
- w.querySelectorAll('th select').forEach(x=>x.replaceWith('Status'));
- w.querySelectorAll('select').forEach(x=>x.replaceWith(x.value));
- w.querySelectorAll('th input').forEach(x=>x.remove());
- w.querySelectorAll('input.ck').forEach(x=>x.replaceWith(x.checked?'✔':''));
- w.querySelector('.wrap')||0;
- document.body.appendChild(w);
- const cv=await html2canvas(w,{scale:Math.min(2,15000/w.offsetHeight),backgroundColor:'#fff'});w.remove();return cv;
+function check(){
+  var s=document.getElementById('src');
+  if(!R.length){show('Munnadi data paste panni Draw Table click pannunga.','err');return false}
+  if(!s.value.trim()){s.classList.add('bad');s.focus();show('First Payment Source fill pannunga!','err');return false}
+  hide();return true;
 }
-const blobOf=cv=>new Promise(r=>cv.toBlob(r,'image/png'));
-$('im').onclick=async()=>save(await blobOf(await makeCanvas()),stamp()+'.png');
-$('cp').onclick=async()=>{
- const b=$('cp'),t=b.textContent;b.textContent='Copying...';
- try{
-  await navigator.clipboard.write([new ClipboardItem({'image/png':makeCanvas().then(blobOf)})]);
-  b.textContent='✔ Copied!';
- }catch(e){
-  save(await blobOf(await makeCanvas()),stamp()+'.png');
-  alert('Browser clipboard allow pannala, so image download aagiduchu. (Chrome/Edge-la open pannunga)');b.textContent=t;return;
- }
- setTimeout(()=>b.textContent=t,1800);
-};
-</script></body></html>
+function exNode(){
+  var e=document.getElementById('ex');
+  e.innerHTML='<h2>MM Advance - '+new Date().toLocaleDateString('en-GB')+'</h2><div style="margin-bottom:8px">Payment Source: <b>'+esc(document.getElementById('src').value.trim())+'</b></div>'+topHtml()+'<div class="gap"></div>'+mainHtml();
+  return e;
+}
+function canvas(){return html2canvas(exNode(),{backgroundColor:'#ffffff',scale:2})}
+function copyImg(){
+  if(!check())return;
+  canvas().then(function(c){
+    c.toBlob(function(b){
+      try{navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(function(){show('Image copied! Ippo paste pannalaam.','ok')},function(){show('Copy block aachu. Download Image use pannunga.','err')})}
+      catch(e){show('Indha browser la image copy support illa. Download Image use pannunga.','err')}
+    },'image/png');
+  });
+}
+function dl(type){
+  if(!check())return;
+  var name='MM_Advance_'+new Date().toISOString().slice(0,10),src=document.getElementById('src').value.trim();
+  if(type==='xlsx'){
+    var hd=[];H.forEach(function(x,j){hd.push(x);if(j===iD)hd.push('Name')});hd.push('Payment Source');
+    var data=[hd].concat(R.map(function(r,i){
+      var o=[];
+      r.forEach(function(c,j){o.push(NC[j]&&c!==''?num(c):c);if(j===iD)o.push(N[i])});
+      o.push(src);return o;
+    }));
+    data.push([]);
+    var tr=new Array(hd.length).fill('');tr[0]='TOTAL';tr[iA+(iA>iD?1:0)]=total();data.push(tr);
+    var rp=reps(),s2=[['Name','Count','Total Amount']].concat(rp.map(function(g){return [g.name,g.c,g.t]}));
+    var wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'MM Advance');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s2),'Repeated Name Total');
+    XLSX.writeFile(wb,name+'.xlsx');return;
+  }
+  canvas().then(function(c){
+    if(type==='png'){var a=document.createElement('a');a.href=c.toDataURL('image/png');a.download=name+'.png';a.click()}
+    else{var J=window.jspdf.jsPDF,w=c.width,h=c.height;var p=new J({orientation:w>h?'l':'p',unit:'px',format:[w/2,h/2]});p.addImage(c.toDataURL('image/png'),'PNG',0,0,w/2,h/2);p.save(name+'.pdf')}
+  });
+}
+function clearAll(){
+  document.getElementById('paste').value='';document.getElementById('src').value='';
+  H=[];R=[];N=[];NC=[];document.getElementById('tw').style.display='none';document.getElementById('acts').style.display='none';hide();
+}
+</script>
+</body>
+</html>
